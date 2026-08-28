@@ -37,7 +37,7 @@ Its purpose is to demonstrate the protocol, not to build a production IoT app.
 - Portable loss, corruption, delay, and jitter simulation.
 - One-command demo and a three-policy benchmark (`raw`, `reliable-all`, `dart`).
 - Wireshark Lua dissector with CRC and payload decoding.
-- 86 standard-library unit and localhost integration tests.
+- Standard-library unit and localhost integration tests.
 - Protocol specification, course alignment, assignment checklist, and
   presentation/demo guide.
 - Project hand-in artifacts: the protocol report at `docs.pdf`, plus a
@@ -66,7 +66,7 @@ source tree; GitHub can also generate a source archive for a tagged revision.
 
 ## Fastest way to try it
 
-From this directory:
+From the repository root after cloning:
 
 ```bash
 python3 -B demo.py
@@ -75,8 +75,9 @@ python3 -B demo.py
 The demo starts a server on a temporary localhost UDP port, registers five
 virtual sensors, injects 10% outbound loss, and deterministically suppresses
 the first critical ACK before `sendto()` so the bounded retry path can be
-observed without processing the same alert twice. This forced ACK suppression
-is a demo control, not a claim that a transmitted ACK was lost in the network.
+observed without repeating its critical side effect inside the configured
+60-second duplicate-cache window. This forced ACK suppression is a demo
+control, not a claim that a transmitted ACK was lost in the network.
 A complete report is written to `results/latest_demo.json`.
 
 Useful variations:
@@ -127,11 +128,17 @@ Quick validation:
 python3 -B benchmark.py --quick
 ```
 
+The quick command writes `results/benchmark_quick.json` and
+`results/benchmark_quick.csv`, so it cannot overwrite the committed
+presentation-quality result. Supplying `--output` always uses the requested
+path.
+
 Presentation-quality run with repeated measurements:
 
 ```bash
 python3 -B benchmark.py --sensors 5 --duration 4 --repeats 5 \
-  --loss-rates 0 0.05 0.10 0.20
+  --loss-rates 0 0.05 0.10 0.20 --seed 100 \
+  --output results/benchmark.json
 ```
 
 The benchmark writes JSON and CSV under `results/`. Every policy replays the
@@ -150,6 +157,24 @@ CoAP, or MQTT. Treat `--quick` as a pipeline smoke test; use multiple repeats
 and report the workload, seed, sample count, and conditional latency sample
 counts with any performance result. The committed measurements are controlled
 lab evidence, not a production-network or statistically universal benchmark.
+For reproducibility, the JSON `method` block records `base_seed` and
+`seed_derivation`; every case records `case_seed`, `simulation_seed`, and
+`server_seed`, and the CSV repeats that provenance on every row.
+
+## Relationship to existing protocols
+
+DART is not a replacement for these established protocols, and the local
+benchmark above does not compare their implementations:
+
+| Protocol | What it provides | Relationship to DART |
+|---|---|---|
+| TCP | Reliable, ordered byte-stream transport | Better fit when every byte must arrive in order; DART instead exposes message boundaries over UDP and implements bounded retry only for selected message classes. |
+| MQTT | Standard broker-based publish/subscribe messaging with defined QoS levels | Much broader and interoperable; DART is a small educational wire protocol with no broker and sensor-specific batch/latest/deadline semantics. |
+| CoAP | Standard REST-style constrained-device protocol with confirmable and non-confirmable messages | Much broader and interoperable; DART combines its three course-project delivery classes in a custom telemetry format. |
+
+The presentation may claim only that DART demonstrates and measures its own
+design trade-off under the recorded workload—not that it is universally
+faster, newer, or better than TCP, MQTT, or CoAP.
 
 ## Run tests
 

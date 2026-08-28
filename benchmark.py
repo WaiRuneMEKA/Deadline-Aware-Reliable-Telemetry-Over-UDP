@@ -17,6 +17,10 @@ from dart.simulator import Policy, run_simulation
 
 
 POLICIES = (Policy.RAW, Policy.RELIABLE_ALL, Policy.DART)
+DEFAULT_BENCHMARK_OUTPUT = "results/benchmark.json"
+DEFAULT_QUICK_OUTPUT = "results/benchmark_quick.json"
+CASE_SEED_STRIDE = 1_000_000
+SERVER_SEED_OFFSET = 50_000
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,30 +34,70 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--jitter-ms", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=100)
     parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--output", default="results/benchmark.json")
+    parser.add_argument(
+        "--output",
+        default=None,
+        help=(
+            "JSON output path (default: results/benchmark.json, or "
+            "results/benchmark_quick.json with --quick)"
+        ),
+    )
     return parser
+
+
+def resolve_output_path(output: str | None, *, quick: bool) -> Path:
+    """Choose a safe default while preserving an explicit --output value."""
+    if output is not None:
+        return Path(output)
+    return Path(DEFAULT_QUICK_OUTPUT if quick else DEFAULT_BENCHMARK_OUTPUT)
+
+
+def derive_case_seed(
+    base_seed: int,
+    *,
+    loss_rate_index: int,
+    repeat: int,
+    repeat_count: int,
+) -> int:
+    """Return a unique, policy-independent seed for one benchmark case.
+
+    The loss-rate index follows the order supplied on the command line.  Every
+    policy at the same loss-rate index and repeat receives the same case seed,
+    while the stride leaves a separate namespace for server-side randomness.
+    """
+    if loss_rate_index < 0:
+        raise ValueError("loss_rate_index must be non-negative")
+    if repeat_count < 1:
+        raise ValueError("repeat_count must be at least 1")
+    if not 1 <= repeat <= repeat_count:
+        raise ValueError("repeat must be between 1 and repeat_count")
+    case_ordinal = loss_rate_index * repeat_count + (repeat - 1)
+    return base_seed + case_ordinal * CASE_SEED_STRIDE
 
 
 def run_case(
     policy: Policy,
     loss_rate: float,
+    loss_rate_index: int,
     repeat: int,
     *,
     sensors: int,
     duration_s: float,
     delay_ms: float,
     jitter_ms: float,
-    seed: int,
+    base_seed: int,
+    case_seed: int,
     alerts_per_sensor: int,
 ) -> dict[str, Any]:
-    case_seed = seed + repeat * 1_000 + int(loss_rate * 10_000)
+    simulation_seed = case_seed
+    server_seed = case_seed + SERVER_SEED_OFFSET
     server = DartServer(
         port=0,
         workers=max(4, sensors),
         ack_loss_rate=loss_rate,
         network_delay_ms=delay_ms,
         jitter_ms=jitter_ms,
-        seed=case_seed + 50_000,
+        seed=server_seed,
         allow_experimental_policies=True,
         quiet=True,
     ).start()
@@ -69,7 +113,7 @@ def run_case(
             alert_at_s=min(0.8, duration_s / 2),
             alert_all_sensors=True,
             alerts_per_sensor=alerts_per_sensor,
-            seed=case_seed,
+            seed=simulation_seed,
             quiet=True,
         )
         if simulation["registered_sensors"] != sensors:
@@ -139,7 +183,12 @@ def run_case(
     result = {
         "policy": policy.value,
         "loss_rate": loss_rate,
+        "loss_rate_index": loss_rate_index,
         "repeat": repeat,
+        "base_seed": base_seed,
+        "case_seed": case_seed,
+        "simulation_seed": simulation_seed,
+        "server_seed": server_seed,
         "workload_fingerprint": simulation["workload_fingerprint"],
         "registered_sensors": simulation["registered_sensors"],
         "registration_failures": len(simulation["registration_failures"]),
@@ -324,6 +373,10 @@ def validate_equal_workload(cases: list[dict[str, Any]]) -> None:
         "latest_generated",
         "alerts_generated",
         "workload_fingerprint",
+        "base_seed",
+        "case_seed",
+        "simulation_seed",
+        "server_seed",
     )
     for key, group in groups.items():
         signatures = {
@@ -339,7 +392,11 @@ def validate_equal_workload(cases: list[dict[str, Any]]) -> None:
 def write_csv(path: Path, cases: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(cases[0]))
+        writer = csv.DictWriter(
+            stream,
+            fieldnames=list(cases[0]),
+            lineterminator="\n",
+        )
         writer.writeheader()
         for case in cases:
             row = dict(case)
@@ -380,66 +437,19 @@ def _format_ms(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.1f}ms"
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    if args.quick:
-        args.sensors = 2
-        args.duration = 1.5
-        args.repeats = 1
-        args.loss_rates = [0.0, 0.2]
-    if args.sensors < 1:
-        parser.error("--sensors must be at least 1")
-    if not math.isfinite(args.duration) or args.duration <= 0:
-        parser.error("--duration must be finite and positive")
-    for loss_rate in args.loss_rates:
-        if not 0.0 <= loss_rate <= 1.0:
-            parser.error("--loss-rates values must be between 0 and 1")
-    if args.repeats < 1:
-        parser.error("--repeats must be at least 1")
-    if args.alerts_per_sensor < 1:
-        parser.error("--alerts-per-sensor must be at least 1")
-    if (
-        not math.isfinite(args.delay_ms)
-        or not math.isfinite(args.jitter_ms)
-        or args.delay_ms < 0
-        or args.jitter_ms < 0
-    ):
-        parser.error("--delay-ms and --jitter-ms must be finite and non-negative")
-
-    cases: list[dict[str, Any]] = []
-    total = len(POLICIES) * len(args.loss_rates) * args.repeats
-    number = 0
-    for loss_rate in args.loss_rates:
-        for policy in POLICIES:
-            for repeat in range(1, args.repeats + 1):
-                number += 1
-                print(
-                    f"[{number:02d}/{total:02d}] policy={policy.value:<12} "
-                    f"loss={loss_rate:.0%} repeat={repeat}"
-                )
-                cases.append(
-                    run_case(
-                        policy,
-                        loss_rate,
-                        repeat,
-                        sensors=args.sensors,
-                        duration_s=args.duration,
-                        delay_ms=args.delay_ms,
-                        jitter_ms=args.jitter_ms,
-                        seed=args.seed,
-                        alerts_per_sensor=args.alerts_per_sensor,
-                    )
-                )
-
-    validate_equal_workload(cases)
-    summary = summarize(cases)
-    report = {
+def build_report(
+    args: argparse.Namespace,
+    cases: list[dict[str, Any]],
+    summary: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build the serializable benchmark report, including provenance."""
+    return {
         "project": "DART v1 policy benchmark",
         "generated_at": datetime.now().astimezone().isoformat(),
         "method": {
             "transport": "UDP over IPv4 loopback",
             "loss": "seeded pseudo-random application-level drop in both directions",
+            "quick": args.quick,
             "sensors": args.sensors,
             "duration_s": args.duration,
             "workload": (
@@ -452,6 +462,24 @@ def main(argv: list[str] | None = None) -> int:
             "loss_rates": args.loss_rates,
             "delay_ms": args.delay_ms,
             "jitter_ms": args.jitter_ms,
+            "base_seed": args.seed,
+            "seed_derivation": {
+                "formula": (
+                    "case_seed = base_seed + "
+                    "((loss_rate_index * repeats) + (repeat - 1)) * "
+                    f"{CASE_SEED_STRIDE}"
+                ),
+                "loss_rate_index": (
+                    "zero-based position in the supplied loss_rates list"
+                ),
+                "case_seed_stride": CASE_SEED_STRIDE,
+                "simulation_seed": "case_seed",
+                "server_seed": f"case_seed + {SERVER_SEED_OFFSET}",
+                "policy_pairing": (
+                    "all policies at the same loss-rate index and repeat reuse "
+                    "the same case, simulation, and server seeds"
+                ),
+            },
             "latency_semantics": {
                 "server_accept": (
                     "original packet timestamp to first server acceptance, "
@@ -478,7 +506,73 @@ def main(argv: list[str] | None = None) -> int:
         "cases": cases,
         "summary": summary,
     }
-    target = Path(args.output)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.quick:
+        args.sensors = 2
+        args.duration = 1.5
+        args.repeats = 1
+        args.loss_rates = [0.0, 0.2]
+    if args.sensors < 1:
+        parser.error("--sensors must be at least 1")
+    if not math.isfinite(args.duration) or args.duration <= 0:
+        parser.error("--duration must be finite and positive")
+    for loss_rate in args.loss_rates:
+        if not 0.0 <= loss_rate <= 1.0:
+            parser.error("--loss-rates values must be between 0 and 1")
+    if len(args.loss_rates) != len(set(args.loss_rates)):
+        parser.error("--loss-rates values must not contain duplicates")
+    if args.repeats < 1:
+        parser.error("--repeats must be at least 1")
+    if args.alerts_per_sensor < 1:
+        parser.error("--alerts-per-sensor must be at least 1")
+    if (
+        not math.isfinite(args.delay_ms)
+        or not math.isfinite(args.jitter_ms)
+        or args.delay_ms < 0
+        or args.jitter_ms < 0
+    ):
+        parser.error("--delay-ms and --jitter-ms must be finite and non-negative")
+
+    cases: list[dict[str, Any]] = []
+    total = len(POLICIES) * len(args.loss_rates) * args.repeats
+    number = 0
+    for loss_rate_index, loss_rate in enumerate(args.loss_rates):
+        for policy in POLICIES:
+            for repeat in range(1, args.repeats + 1):
+                number += 1
+                print(
+                    f"[{number:02d}/{total:02d}] policy={policy.value:<12} "
+                    f"loss={loss_rate:.0%} repeat={repeat}"
+                )
+                cases.append(
+                    run_case(
+                        policy,
+                        loss_rate,
+                        loss_rate_index,
+                        repeat,
+                        sensors=args.sensors,
+                        duration_s=args.duration,
+                        delay_ms=args.delay_ms,
+                        jitter_ms=args.jitter_ms,
+                        base_seed=args.seed,
+                        case_seed=derive_case_seed(
+                            args.seed,
+                            loss_rate_index=loss_rate_index,
+                            repeat=repeat,
+                            repeat_count=args.repeats,
+                        ),
+                        alerts_per_sensor=args.alerts_per_sensor,
+                    )
+                )
+
+    validate_equal_workload(cases)
+    summary = summarize(cases)
+    report = build_report(args, cases, summary)
+    target = resolve_output_path(args.output, quick=args.quick)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"

@@ -64,9 +64,14 @@ def main(argv: list[str] | None = None) -> int:
             "Critical alerts: ACK + retry\n"
         )
 
+    server_workers = max(4, args.sensors)
+    sample_interval_s = 0.2
+    batch_size = 5
+    alert_at_s = min(2.0, args.duration / 2)
+    alert_sensor_id = 1
     server = DartServer(
         port=0,
-        workers=max(4, args.sensors),
+        workers=server_workers,
         ack_loss_rate=args.ack_loss_rate,
         ack_corrupt_rate=args.corrupt_rate,
         network_delay_ms=args.delay_ms,
@@ -81,13 +86,15 @@ def main(argv: list[str] | None = None) -> int:
             server.address,
             sensors=args.sensors,
             duration_s=args.duration,
+            sample_interval_s=sample_interval_s,
+            batch_size=batch_size,
             policy=Policy(args.policy),
             loss_rate=args.loss_rate,
             corrupt_rate=args.corrupt_rate,
             delay_ms=args.delay_ms,
             jitter_ms=args.jitter_ms,
-            alert_at_s=min(2.0, args.duration / 2),
-            alert_sensor_id=1,
+            alert_at_s=alert_at_s,
+            alert_sensor_id=alert_sensor_id,
             seed=args.seed,
             quiet=args.quiet,
         )
@@ -100,8 +107,28 @@ def main(argv: list[str] | None = None) -> int:
         "project": "DART v1",
         "generated_at": datetime.now().astimezone().isoformat(),
         "demo_configuration": {
-            "drop_first_critical_ack": not args.no_drop_first_ack,
+            "sensors": args.sensors,
+            "duration_s": args.duration,
+            "sample_interval_s": sample_interval_s,
+            "batch_size": batch_size,
             "policy": args.policy,
+            "loss_rate": args.loss_rate,
+            "ack_loss_rate": args.ack_loss_rate,
+            "corrupt_rate": args.corrupt_rate,
+            "delay_ms": args.delay_ms,
+            "jitter_ms": args.jitter_ms,
+            "seed": args.seed,
+            "simulation_base_seed": args.seed,
+            "server_seed": args.seed,
+            "seed_scope": (
+                "the server uses server_seed directly; the simulator derives "
+                "deterministic per-sensor transport and workload seeds from "
+                "simulation_base_seed"
+            ),
+            "server_workers": server_workers,
+            "alert_at_s": alert_at_s,
+            "alert_sensor_id": alert_sensor_id,
+            "drop_first_critical_ack": not args.no_drop_first_ack,
         },
         "simulation": simulation,
         "server": server.snapshot_metrics(),
@@ -138,7 +165,7 @@ def evaluate_report(report: dict) -> dict:
             {
                 "all_critical_alerts_confirmed": confirmed_alerts
                 == generated_alerts,
-                "critical_alerts_processed_exactly_once": server[
+                "critical_alerts_processed_once_within_demo_window": server[
                     "critical_alerts_received"
                 ]
                 == generated_alerts,
@@ -179,7 +206,7 @@ def print_summary(report: dict, target: Path) -> None:
     print(f"Normal readings at RX  : {server['readings_received']}")
     print(f"Critical alerts at RX  : {server['critical_alerts_received']}")
     print(f"Duplicate packets      : {server['duplicate_packets']}")
-    print(f"ACKs deliberately lost : {server['acks_simulated_dropped']}")
+    print(f"ACKs suppressed pre-send: {server['acks_simulated_dropped']}")
     print(f"Result                  : {'PASS' if acceptance['passed'] else 'FAIL'}")
     for name, passed in acceptance["checks"].items():
         print(f"  [{'x' if passed else ' '}] {name}")
