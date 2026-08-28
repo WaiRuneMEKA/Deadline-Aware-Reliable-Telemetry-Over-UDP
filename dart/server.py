@@ -910,7 +910,7 @@ class DartServer:
                     with self._metrics_lock:
                         self.metrics.acks_simulated_dropped += 1
                     self._warn(
-                        f"SIMULATED DROP first critical ACK "
+                        f"SIMULATED SUPPRESSION first critical ACK before sendto "
                         f"session={original.session_id} sensor={original.sensor_id} "
                         f"seq={original.sequence}"
                     )

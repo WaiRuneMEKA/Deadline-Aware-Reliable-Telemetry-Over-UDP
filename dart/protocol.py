@@ -387,8 +387,14 @@ def decode_readings(payload: bytes) -> list[Reading]:
     if len(payload) < BATCH_COUNT_STRUCT.size:
         raise PayloadError("DATA_BATCH payload is missing its reading count")
     (count,) = BATCH_COUNT_STRUCT.unpack_from(payload)
+    if count == 0:
+        raise PayloadError("DATA_BATCH must contain at least one reading")
+    if count > MAX_BATCH_READINGS:
+        raise PayloadError(
+            f"DATA_BATCH supports at most {MAX_BATCH_READINGS} readings"
+        )
     expected = BATCH_COUNT_STRUCT.size + count * READING_STRUCT.size
-    if count == 0 or len(payload) != expected:
+    if len(payload) != expected:
         raise PayloadError(
             f"invalid DATA_BATCH length: count={count}, expected={expected}, "
             f"received={len(payload)}"
