@@ -7,7 +7,6 @@ one idea: **not every sensor message needs the same delivery policy**.
 
 - **Course:** 01418351 — หลักการสื่อสารคอมพิวเตอร์และการประมวลผลบนคลาวด์
   (Computer Communications and Cloud Computing Principles)
-- **Assignment:** Project 1 — Socket Programming
 - **Author:** เมตัส พานิช กายย์
 - **Student ID:** 6710405460
 
