@@ -1,21 +1,37 @@
 {
   "project": "DART v1",
-  "generated_at": "2026-08-28T12:17:10.010179+07:00",
+  "generated_at": "2026-08-28T13:46:34.284597+07:00",
   "demo_configuration": {
-    "drop_first_critical_ack": true,
-    "policy": "dart"
+    "sensors": 5,
+    "duration_s": 6.0,
+    "sample_interval_s": 0.2,
+    "batch_size": 5,
+    "policy": "dart",
+    "loss_rate": 0.1,
+    "ack_loss_rate": 0.0,
+    "corrupt_rate": 0.0,
+    "delay_ms": 0.0,
+    "jitter_ms": 0.0,
+    "seed": 42,
+    "simulation_base_seed": 42,
+    "server_seed": 42,
+    "seed_scope": "the server uses server_seed directly; the simulator derives deterministic per-sensor transport and workload seeds from simulation_base_seed",
+    "server_workers": 5,
+    "alert_at_s": 2.0,
+    "alert_sensor_id": 1,
+    "drop_first_critical_ack": true
   },
   "simulation": {
     "policy": "dart",
     "server": [
       "127.0.0.1",
-      50509
+      50464
     ],
     "requested_sensors": 5,
     "registered_sensors": 5,
     "registration_failures": [],
     "duration_requested_s": 6.0,
-    "elapsed_ms": 6429.844,
+    "elapsed_ms": 6415.117,
     "sample_interval_s": 0.2,
     "batch_size": 5,
     "alert_all_sensors": false,
@@ -35,7 +51,7 @@
         "alerts_locally_successful": 1,
         "reliable_failures": 0,
         "scheduled_event_count": 43,
-        "max_schedule_lateness_ms": 567.763,
+        "max_schedule_lateness_ms": 565.202,
         "final_latest_value": 18.25,
         "workload_fingerprint": "fce00d89e372208ee836f3317ea2361a6d2fae1b7d55f220b7971b8fa426ee24",
         "alert_results": [
@@ -43,7 +59,7 @@
             "success": true,
             "sequence": 165578910,
             "attempts": 3,
-            "latency_ms": 764.177,
+            "latency_ms": 762.93,
             "status_code": 409,
             "detail": "acknowledged"
           }
@@ -58,7 +74,7 @@
         "alerts_locally_successful": 0,
         "reliable_failures": 0,
         "scheduled_event_count": 42,
-        "max_schedule_lateness_ms": 4.891,
+        "max_schedule_lateness_ms": 3.924,
         "final_latest_value": 28.25,
         "workload_fingerprint": "f889a7d8b3ff89296baba47b2086258a414d1e609a788693a37a9f032f17845e",
         "alert_results": []
@@ -72,7 +88,7 @@
         "alerts_locally_successful": 0,
         "reliable_failures": 0,
         "scheduled_event_count": 42,
-        "max_schedule_lateness_ms": 4.515,
+        "max_schedule_lateness_ms": 4.028,
         "final_latest_value": 38.25,
         "workload_fingerprint": "b71e90db2db38eaebdf08791871c36fbe3c9ecc2188a7c8665c6682f4a38f257",
         "alert_results": []
@@ -86,7 +102,7 @@
         "alerts_locally_successful": 0,
         "reliable_failures": 0,
         "scheduled_event_count": 42,
-        "max_schedule_lateness_ms": 4.713,
+        "max_schedule_lateness_ms": 4.275,
         "final_latest_value": 48.25,
         "workload_fingerprint": "28cc57a8e5fc7832c7af65ff1404636644b6f162b66c2f2ad75b20f67fa5ab95",
         "alert_results": []
@@ -100,7 +116,7 @@
         "alerts_locally_successful": 0,
         "reliable_failures": 0,
         "scheduled_event_count": 42,
-        "max_schedule_lateness_ms": 3.93,
+        "max_schedule_lateness_ms": 4.082,
         "final_latest_value": 58.25,
         "workload_fingerprint": "e71603c4b6ca4636a55d2ff05dea93a57cb1a30f163e6d9f52ff2cec28741156",
         "alert_results": []
@@ -108,7 +124,7 @@
     ],
     "clients": [
       {
-        "started_at_ms": 1787894223533,
+        "started_at_ms": 1787899587818,
         "messages_generated": {
           "REGISTER_REQ": 1,
           "LATEST_UPDATE": 12,
@@ -128,17 +144,17 @@
         "critical_failures": 0,
         "reliable_latency_ms": {
           "count": 2,
-          "median": 511.29,
-          "p95": 738.888,
-          "max": 764.177
+          "median": 508.856,
+          "p95": 737.523,
+          "max": 762.93
         },
         "sensor_id": 1,
         "name": "virtual-sensor-001",
-        "client_instance_id": "42112e97374e19e89ac30785a3fb09b1",
-        "session_id": 331903326,
+        "client_instance_id": "206e20d6db7bb1eadaaa60b7bad9294f",
+        "session_id": 1392814307,
         "local_address": [
           "127.0.0.1",
-          52791
+          60531
         ],
         "transmitter": {
           "attempted_packets": 23,
@@ -150,7 +166,7 @@
         }
       },
       {
-        "started_at_ms": 1787894223792,
+        "started_at_ms": 1787899588073,
         "messages_generated": {
           "REGISTER_REQ": 1,
           "LATEST_UPDATE": 12,
@@ -168,17 +184,17 @@
         "critical_failures": 0,
         "reliable_latency_ms": {
           "count": 1,
-          "median": 0.732,
-          "p95": 0.732,
-          "max": 0.732
+          "median": 0.874,
+          "p95": 0.874,
+          "max": 0.874
         },
         "sensor_id": 2,
         "name": "virtual-sensor-002",
-        "client_instance_id": "6cece5cc1d68da9eb015f79ad8d7f9b0",
-        "session_id": 1080966047,
+        "client_instance_id": "618e210666e159fc6b074b808490bece",
+        "session_id": 3074944196,
         "local_address": [
           "127.0.0.1",
-          50304
+          62762
         ],
         "transmitter": {
           "attempted_packets": 19,
@@ -190,7 +206,7 @@
         }
       },
       {
-        "started_at_ms": 1787894223793,
+        "started_at_ms": 1787899588075,
         "messages_generated": {
           "REGISTER_REQ": 1,
           "LATEST_UPDATE": 12,
@@ -208,17 +224,17 @@
         "critical_failures": 0,
         "reliable_latency_ms": {
           "count": 1,
-          "median": 0.789,
-          "p95": 0.789,
-          "max": 0.789
+          "median": 0.498,
+          "p95": 0.498,
+          "max": 0.498
         },
         "sensor_id": 3,
         "name": "virtual-sensor-003",
-        "client_instance_id": "08ff8f2b25d183b4b6b1b85b0e754f66",
-        "session_id": 3062099676,
+        "client_instance_id": "363b2fc8717a6d742af37cc10cee8b5d",
+        "session_id": 4142399982,
         "local_address": [
           "127.0.0.1",
-          60328
+          63783
         ],
         "transmitter": {
           "attempted_packets": 19,
@@ -230,7 +246,7 @@
         }
       },
       {
-        "started_at_ms": 1787894223794,
+        "started_at_ms": 1787899588076,
         "messages_generated": {
           "REGISTER_REQ": 1,
           "LATEST_UPDATE": 12,
@@ -248,17 +264,17 @@
         "critical_failures": 0,
         "reliable_latency_ms": {
           "count": 1,
-          "median": 1.811,
-          "p95": 1.811,
-          "max": 1.811
+          "median": 0.493,
+          "p95": 0.493,
+          "max": 0.493
         },
         "sensor_id": 4,
         "name": "virtual-sensor-004",
-        "client_instance_id": "6325b196739abb8c625020e9e50ad7e3",
-        "session_id": 1424642320,
+        "client_instance_id": "f9938a597ff53a2e80ca8ec132e41db7",
+        "session_id": 2658179394,
         "local_address": [
           "127.0.0.1",
-          54107
+          58235
         ],
         "transmitter": {
           "attempted_packets": 19,
@@ -270,7 +286,7 @@
         }
       },
       {
-        "started_at_ms": 1787894223796,
+        "started_at_ms": 1787899588076,
         "messages_generated": {
           "REGISTER_REQ": 1,
           "LATEST_UPDATE": 12,
@@ -288,17 +304,17 @@
         "critical_failures": 0,
         "reliable_latency_ms": {
           "count": 1,
-          "median": 1.66,
-          "p95": 1.66,
-          "max": 1.66
+          "median": 0.362,
+          "p95": 0.362,
+          "max": 0.362
         },
         "sensor_id": 5,
         "name": "virtual-sensor-005",
-        "client_instance_id": "e93bce89b84b2d89e49a2c8ad94631bf",
-        "session_id": 3374050425,
+        "client_instance_id": "da317be1bae3462f92f83c3b1012e89c",
+        "session_id": 1258250526,
         "local_address": [
           "127.0.0.1",
-          63045
+          56581
         ],
         "transmitter": {
           "attempted_packets": 19,
@@ -326,9 +342,9 @@
     }
   },
   "server": {
-    "started_at_ms": 1787894223531,
-    "stopped_at_ms": 1787894230009,
-    "duration_ms": 6478,
+    "started_at_ms": 1787899587817,
+    "stopped_at_ms": 1787899594284,
+    "duration_ms": 6467,
     "packets_received": 80,
     "bytes_received": 5310,
     "decode_errors": 0,
@@ -352,38 +368,38 @@
     },
     "critical_latency_ms": {
       "count": 1,
-      "median": 1.0,
-      "p95": 1.0,
-      "max": 1.0,
+      "median": 0.0,
+      "p95": 0.0,
+      "max": 0.0,
       "samples": [
-        1.0
+        0.0
       ]
     },
     "active_sessions": 5,
     "latest_values": {
-      "session_1080966047.sensor_2.POSITION_X": {
-        "value": 28.25,
-        "timestamp_ms": 1787894229300,
-        "sequence": 1754648250
-      },
-      "session_1424642320.sensor_4.POSITION_X": {
-        "value": 48.25,
-        "timestamp_ms": 1787894229300,
-        "sequence": 3815082360
-      },
-      "session_331903326.sensor_1.POSITION_X": {
+      "session_1392814307.sensor_1.POSITION_X": {
         "value": 17.5,
-        "timestamp_ms": 1787894228801,
+        "timestamp_ms": 1787899593080,
         "sequence": 165578919
       },
-      "session_3374050425.sensor_5.POSITION_X": {
+      "session_3074944196.sensor_2.POSITION_X": {
+        "value": 28.25,
+        "timestamp_ms": 1787899593579,
+        "sequence": 1754648250
+      },
+      "session_2658179394.sensor_4.POSITION_X": {
+        "value": 48.25,
+        "timestamp_ms": 1787899593579,
+        "sequence": 3815082360
+      },
+      "session_1258250526.sensor_5.POSITION_X": {
         "value": 58.25,
-        "timestamp_ms": 1787894229304,
+        "timestamp_ms": 1787899593580,
         "sequence": 1511168179
       },
-      "session_3062099676.sensor_3.POSITION_X": {
+      "session_4142399982.sensor_3.POSITION_X": {
         "value": 38.25,
-        "timestamp_ms": 1787894229302,
+        "timestamp_ms": 1787899593581,
         "sequence": 1167696022
       }
     },
@@ -392,8 +408,8 @@
       "sent_packets": 6,
       "dropped_packets": 0,
       "corrupted_packets": 0,
-      "attempted_bytes": 1109,
-      "sent_bytes": 1109
+      "attempted_bytes": 1110,
+      "sent_bytes": 1110
     }
   },
   "acceptance": {
@@ -405,7 +421,7 @@
       "critical_alert_delivered": true,
       "wire_decode_clean": true,
       "all_critical_alerts_confirmed": true,
-      "critical_alerts_processed_exactly_once": true,
+      "critical_alerts_processed_once_within_demo_window": true,
       "forced_critical_ack_drop_observed": true,
       "critical_retransmission_observed": true,
       "duplicate_suppression_observed": true
