@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dart-telemetry-demo"
+version = "1.0.0"
+description = "Educational Deadline-Aware Reliable Telemetry protocol over UDP"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+authors = [
+  { name = "เมตัส พานิช กายย์" },
+]
+keywords = ["application-layer-protocol", "telemetry", "udp", "networking-education"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Education",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: System :: Networking",
+]
+
+[project.scripts]
+dart-server = "dart.server:main"
+dart-simulator = "dart.simulator:main"
+
+[tool.setuptools]
+packages = ["dart"]
+
+[tool.dart.course]
+code = "01418351"
+title_th = "หลักการสื่อสารคอมพิวเตอร์และการประมวลผลบนคลาวด์"
+title_en = "Computer Communications and Cloud Computing Principles"
+assignment = "Project 1: Socket Programming"
+author = "เมตัส พานิช กายย์"
+student_id = "6710405460"
