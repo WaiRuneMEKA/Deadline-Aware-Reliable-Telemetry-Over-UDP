@@ -110,7 +110,9 @@ confirmation rate          = alerts ที่ client ได้ ACK / alerts ท�
 
 Benchmark แยก `total_attempted_bytes` (รวม datagram ที่ impairment จำลองว่าหาย) ออกจาก `total_sent_bytes` (DART bytes ที่ผ่านเข้า UDP socket จริง) ทั้งสองค่ารวม client+server และไม่รวม UDP/IP/link headers ค่า overhead ของ registration/control รวมอยู่ด้วยและบันทึกไว้ใน `method`
 
-ทุก policy replay ตาราง event ที่สร้างล่วงหน้า และตรวจทั้งจำนวน ค่า offset และ SHA-256 workload fingerprint ให้ตรงกัน Seed และ loss probability เท่ากัน แต่ไม่ใช่ paired drop trace ราย packet เพราะ ACK/retry ของแต่ละ policy ใช้จำนวน random draw ต่างกัน คำกล่าวที่ตรวจสอบได้จึงเป็น “ภายใต้ fixed workload และการทดลองตาม method นี้ DART มี trade-off เท่าใด” ไม่ใช่ “DART เร็วกว่า TCP หรือ UDP ทุกกรณี” เพราะ DART เองก็วิ่งบน UDP และ bottleneck ของแต่ละ path ต่างกัน
+รายงานยังบันทึก provenance สำหรับ rerun: `method.base_seed` กับ `seed_derivation` อธิบายจุดเริ่มและสูตร ส่วนทุก case มี `case_seed`, `simulation_seed` และ `server_seed`; CSV ทำซ้ำค่าเหล่านี้ในทุกแถว Demo report เก็บ `seed`, `simulation_base_seed`, `server_seed`, `seed_scope` และ impairment/workload configuration ใน `demo_configuration` การรัน `benchmark.py --quick` โดยไม่ระบุ output เขียน `results/benchmark_quick.json`/`.csv` แยกจากผลเต็ม เพื่อไม่ให้ smoke test ทับหลักฐานที่ใช้ในสไลด์
+
+ทุก policy replay ตาราง event ที่สร้างล่วงหน้า และตรวจทั้งจำนวน ค่า offset และ SHA-256 workload fingerprint ให้ตรงกัน Seed และ loss probability เท่ากัน แต่ไม่ใช่ paired drop trace ราย packet เพราะ ACK/retry ของแต่ละ policy ใช้จำนวน random draw ต่างกัน คำกล่าวที่ตรวจสอบได้จึงเป็น “ภายใต้ fixed workload และการทดลองตาม method นี้ DART มี trade-off เท่าใด” ไม่ใช่ “DART เร็วกว่า TCP หรือ UDP ทุกกรณี” เพราะ DART เองก็วิ่งบน UDP และ bottleneck ของแต่ละ path ต่างกัน Benchmark รันเฉพาะ `raw`, `reliable-all` และ `dart` ที่ reuse DART wire format ไม่ได้รัน TCP/MQTT/CoAP จึงไม่มีหลักฐาน performance ข้าม protocol เหล่านั้น
 
 ผลนี้เป็น controlled loopback experiment: loss ถูกจำลองใน application ก่อน `sendto()`, latency ที่รายงานเป็น conditional on available acceptance/ACK samples, และ byte counters ไม่รวม UDP/IP/link headers จำนวน repeats ที่บันทึกเป็นหลักฐานเชิงสาธิต ไม่ใช่การออกแบบตัวอย่างเพื่อสรุปเชิงสถิติกับ production network จึงต้องแสดง workload, seed, repeats และ sample counts ทุกครั้งที่อ้างตัวเลข
 
@@ -173,7 +175,7 @@ DART มีครบทั้งสี่ส่วน:
 | Message types | enum 1–11 ตั้งแต่ `REGISTER_REQ` ถึง `ERROR` |
 | Syntax | fixed big-endian 40-byte header + binary/JSON payload schema |
 | Semantics | delivery class, flag, TTL, status และ metric ID มีความหมายตายตัว |
-| Rules | strict type/delivery/flag/status envelope; ต้อง register ก่อน; alert ต้อง ACK; timeout ใช้ seq เดิม retry; duplicate ห้าม process ซ้ำ |
+| Rules | strict type/delivery/flag/status envelope; ต้อง register ก่อน; alert ต้อง ACK; timeout ใช้ seq เดิม retry; duplicate ห้าม process side effect ซ้ำภายใน cache window |
 
 รายละเอียด wire-level ทั้งหมดอยู่ใน [PROTOCOL_SPEC.md](PROTOCOL_SPEC.md)
 
@@ -191,6 +193,8 @@ Chapter 2 ให้พิจารณา data integrity, timing, throughput แ�
 | Security | prototype ยังไม่มี authentication, encryption, authorization หรือ replay protection | จำกัดการใช้ไว้ที่ loopback/controlled lab; CRC32 ไม่ใช่ security |
 
 UDP เหมาะกับเป้าหมายการเรียนเพราะเปิดให้ implement reliability policy ใน application แต่ไม่ได้แปลว่า UDP ดีกว่า TCP สำหรับทุกระบบ หาก requirement เปลี่ยนเป็นส่งไฟล์ครบทุก byte ตามลำดับ TCP จะเหมาะกว่าและง่ายกว่า
+
+MQTT และ CoAP เป็น application-layer standards ที่กว้างกว่า DART: MQTT ใช้ broker-based publish/subscribe พร้อม QoS ส่วน CoAP ใช้ REST-style request/response พร้อม confirmable/non-confirmable messages DART ไม่ได้เสนอแทนสองมาตรฐานนี้ แต่เป็น educational custom protocol ที่รวม batch, latest-only, deadline และ critical retry เพื่อให้นิสิต implement wire format และวัด trade-off ด้วยตนเอง
 
 CLI bind ที่ `127.0.0.1` เป็นค่าเริ่มต้นเพื่อให้เดโมอยู่ในเครื่องเดียว หากเปลี่ยนไป bind interface อื่น ผู้ใช้ต้องรับผิดชอบ network boundary เอง DART v1 ไม่ควรเปิดรับ traffic จาก shared หรือ untrusted network และ status/session checks ใน prototype ไม่ใช่ระบบยืนยันตัวตน
 

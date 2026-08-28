@@ -119,7 +119,7 @@ dart.status_code == 409
 python3 -B benchmark.py --quick
 ```
 
-`--quick` ใช้ตรวจว่า pipeline รันครบเท่านั้น ไม่ใช่ผล performance สำหรับสรุปหรือใส่สไลด์
+`--quick` ใช้ตรวจว่า pipeline รันครบเท่านั้น ไม่ใช่ผล performance สำหรับสรุปหรือใส่สไลด์ และเขียนแยกเป็น `results/benchmark_quick.json` กับ `results/benchmark_quick.csv` จึงไม่ทับ `results/benchmark.json`/`.csv` ที่ใช้ทำรายงาน ถ้าระบุ `--output` โปรแกรมจะเคารพ path นั้น
 
 สร้างผลที่น่าเชื่อถือกว่าสำหรับสไลด์ด้วยหลาย repeat:
 
@@ -136,7 +136,7 @@ python3 -B benchmark.py \
 
 สคริปต์รัน `raw`, `reliable-all` และ `dart` ด้วย fixed event schedule เดียวกันจาก sensor ทุกตัว โดยปล่อย sensor workers จาก start barrier เดียวกันและให้ fingerprint ครอบคลุม sensor ID, counts, values และ offsets; event ที่ ACK wait ทำให้ช้าจะยังถูก replay ตามลำดับและรายงาน `max_schedule_lateness_ms` ก่อนเก็บ snapshot โปรแกรมรอให้ worker server เป็นศูนย์และ input quiet ผ่าน `wait_until_idle()` แล้ว abort หาก sensor worker ล้มเหลว, drain ไม่ทัน, ลงทะเบียนไม่ครบ, จำนวน alert ผิด หรือ workload fingerprint ต่างกัน
 
-ค่า `summary` ใช้ผลรวมตัวเศษ/ตัวส่วนสำหรับ rate และ pool latency sample ข้าม repeats สำหรับ P95 ไม่ใช่ค่าเฉลี่ยเปอร์เซ็นต์/P95 ราย run ให้เก็บ block `method` ไว้บนสไลด์ด้วย `total_attempted_bytes` รวม DART bytes ทั้งสองทิศทางที่พยายามส่งรวม simulated drop ส่วน `total_sent_bytes` นับเฉพาะที่ผ่านเข้า UDP socket ทั้งคู่ไม่รวม UDP/IP/link headers Seed และ loss probability เดียวกันไม่ได้ทำให้ drop เป็นคู่ตรง logical event เพราะ ACK/retry ของแต่ละ policy ใช้ PRNG draw ไม่เท่ากัน จึงต้องใช้หลาย repeats และไม่เรียกผลนี้ว่า paired packet trace
+ค่า `summary` ใช้ผลรวมตัวเศษ/ตัวส่วนสำหรับ rate และ pool latency sample ข้าม repeats สำหรับ P95 ไม่ใช่ค่าเฉลี่ยเปอร์เซ็นต์/P95 ราย run ให้เก็บ block `method` ไว้บนสไลด์ด้วย `total_attempted_bytes` รวม DART bytes ทั้งสองทิศทางที่พยายามส่งรวม simulated drop ส่วน `total_sent_bytes` นับเฉพาะที่ผ่านเข้า UDP socket ทั้งคู่ไม่รวม UDP/IP/link headers รายงานเก็บ `base_seed` และ `seed_derivation` ใน `method` พร้อม `case_seed`, `simulation_seed` และ `server_seed` ของทุก case เพื่อให้ rerun เงื่อนไขเดิมได้ Seed และ loss probability เดียวกันไม่ได้ทำให้ drop เป็นคู่ตรง logical event เพราะ ACK/retry ของแต่ละ policy ใช้ PRNG draw ไม่เท่ากัน จึงต้องใช้หลาย repeats และไม่เรียกผลนี้ว่า paired packet trace
 
 ผล benchmark เป็น controlled loopback evidence ไม่ใช่ production-network benchmark: simulated loss เกิดก่อน `sendto()`, latency เป็น conditional on samples ที่รับ/ยืนยันได้ และจำนวน repeats ไม่ได้ตั้งขึ้นเพื่ออนุมานเชิงสถิติ ทุกสไลด์ที่อ้างตัวเลขจึงต้องแสดง workload, loss, seed, repeats/sample counts และขอบเขต byte counters พร้อมกัน
 
@@ -202,10 +202,10 @@ Virtual sensors -> DART -> UDP -> IP -> Server
 
 ```text
 Client                 Server
-  | ALERT seq=50 -------->| process once
+  | ALERT seq=50 -------->| first process; cache identity
   |<----- ACK 202 ---X    | ACK lost
   | timeout               |
-  | ALERT seq=50 RETRY -->| duplicate, do not process twice
+  | ALERT seq=50 RETRY -->| duplicate inside cache window
   |<----- ACK 409 --------|
 ```
 
@@ -218,6 +218,8 @@ Client                 Server
 - duplicate cache ป้องกัน side effect ซ้ำ
 
 บอกอย่างแม่นยำว่าเป็น selective retry policy ไม่ใช่ Selective Repeat sliding window แบบเต็ม
+และเป็น process-once ภายใน duplicate-cache window 60 วินาที ไม่ใช่
+exactly-once guarantee ตลอดกาล
 
 ใช้เวลาประมาณ 30–45 วินาทีชี้ code เพียงสามจุด ไม่เลื่อนทั้งไฟล์:
 
@@ -238,7 +240,7 @@ Client                 Server
 7. รอ `FIRE_DETECTED`
 8. ชี้ server log ว่าบังคับไม่ส่ง ACK แรกก่อน `sendto()`
 9. ชี้ client `TIMEOUT` และ packet retry ที่มี sequence เดิม + flag `RETRANSMISSION`
-10. ชี้ `ACK 409 DUPLICATE` และยืนยันว่า server log มี `CRITICAL` เพียงครั้งเดียว
+10. ชี้ `ACK 409 DUPLICATE` และยืนยันว่า server log มี `CRITICAL` เพียงครั้งเดียวในการทดลองนี้และภายใน duplicate-cache window
 
 ห้ามใช้เวลาชี้ทุก field เลือกเฉพาะ field ที่พิสูจน์ claim
 
@@ -272,10 +274,20 @@ Client                 Server
 
 > “แนวคิด ACK, retry, batching และ latest-only มีอยู่ในระบบอื่นแล้ว จุดเด่นของงานนี้ไม่ใช่การอ้างว่าเราเป็นคนแรก แต่คือการออกแบบ wire protocol ขนาดเล็กที่รวม deadline และ delivery policy ต่างกันใน session เดียว แล้วพิสูจน์ trade-off ด้วย packet capture และ metrics ที่ทำซ้ำได้”
 
+เปรียบเทียบเชิงขอบเขต ไม่ใช่ผล benchmark ข้าม protocol:
+
+- TCP ให้ reliable ordered byte stream และเหมาะกว่าเมื่อทุก byte ต้องครบตามลำดับ
+- MQTT เป็นมาตรฐาน publish/subscribe ผ่าน broker พร้อม QoS ที่กว้างกว่า
+- CoAP เป็นมาตรฐาน REST-style สำหรับ constrained devices พร้อม confirmable/non-confirmable messages
+- DART เป็น educational custom protocol ที่รวม batch, latest-only, deadline และ critical retry เพื่อให้ implement และวัดแนวคิดเหล่านี้เอง
+
+ห้ามเปลี่ยนข้อความข้างต้นเป็น claim ว่า DART เร็วกว่า เบากว่า หรือดีกว่า
+TCP/MQTT/CoAP เพราะ benchmark นี้ไม่ได้รัน implementation ของ protocol เหล่านั้น
+
 สิ่งที่ภูมิใจและควรชู:
 
 - exact binary header และ custom Wireshark dissector
-- forced-ACK-suppression demo ที่ process critical alert เพียงครั้งเดียวและทำให้ retry เกิดแบบ deterministic
+- forced-ACK-suppression demo ที่ process critical alert เพียงครั้งเดียวในการทดลองและภายใน duplicate-cache window พร้อมทำให้ retry เกิดแบบ deterministic
 - concurrent UDP server + worker pool
 - seeded pseudo-random impairment ที่ควบคุมเงื่อนไขได้; ACK/retry ทำให้จำนวน PRNG draw ต่างกันจึงไม่ใช่ paired drop trace ข้าม policy และต้องใช้หลาย repeats
 - baseline `raw`, `reliable-all`, `dart` ที่เงื่อนไขเดียวกัน

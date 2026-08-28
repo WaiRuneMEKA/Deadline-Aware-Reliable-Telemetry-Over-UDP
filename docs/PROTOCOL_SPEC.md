@@ -403,7 +403,7 @@ Backoff นี้ลด retry burst ใน demo แต่ **ไม่ใช่ c
   -> session ไม่ถูกต้อง: ERROR 401
   -> หมดอายุ: ERROR/ACK 408 และห้าม process alert
   -> identity เดียวกันกำลัง in-flight: รอผล; ห้ามประกาศ duplicate ก่อน owner commit
-  -> identity อยู่ใน duplicate cache: ห้าม process ซ้ำ, ACK 409
+  -> identity อยู่ใน duplicate cache: ห้าม process side effect ซ้ำภายใน cache window, ACK 409
   -> message ใหม่: claim, process/log หนึ่งครั้ง, commit cache, ACK 202
 ```
 
@@ -452,7 +452,7 @@ Client                                           Server
   | [250 ms timeout]                                  |
   | CRITICAL_ALERT seq=20 ACK_REQUIRED|RETRANSMISSION |
   |-------------------------------------------------->|
-  |                                process once       |
+  |                                first process + cache identity |
   | ACK seq=20 status=202                             |
   |<--------------------------------------------------|
 ```
@@ -462,7 +462,7 @@ Client                                           Server
 ```text
 Client                                           Server
   | CRITICAL_ALERT seq=21 ACK_REQUIRED               |
-  |------------------------------------------------->| process once/cache
+  |------------------------------------------------->| first process/cache identity
   | ACK seq=21 status=202 --------------------X       |
   | [timeout]                                         |
   | CRITICAL_ALERT seq=21 ACK_REQUIRED|RETRANSMISSION |
@@ -526,11 +526,13 @@ CRC32 นี้เพิ่มการตรวจ corruption ที่มอ�
 
 Benchmark สร้าง event schedule ล่วงหน้า ส่ง alert หลายครั้งจากทุก sensor และ fingerprint sensor ID พร้อม counts/values/offsets ของ event list ด้วย SHA-256 ก่อน replay Sensor workers ผ่าน barrier เดียวกันเพื่อประสานจุดเริ่ม จึงไม่ปล่อยให้ policy ที่รอ ACK นานลด offered workload; event ที่ช้าจะถูกส่งทันทีตามลำดับเดิมและรายงาน `max_schedule_lateness_ms` หาก worker ล้มเหลว, sensor ลงทะเบียนไม่ครบ, จำนวน alert ผิด หรือ fingerprint ต่างกันระหว่าง policy ใน loss/repeat เดียวกัน case จะล้มเหลว
 
+เพื่อให้ตรวจ provenance และ rerun เงื่อนไขเดิมได้ JSON block `method` บันทึก `base_seed` กับ `seed_derivation` และทุก case บันทึก `case_seed`, `simulation_seed` และ `server_seed`; CSV ทำซ้ำ field เหล่านี้ในทุกแถว `demo.py` บันทึก `seed`, `simulation_base_seed`, `server_seed`, `seed_scope` พร้อม loss/ACK-loss/corruption/delay/jitter และ workload configuration ใน `demo_configuration` การรัน `benchmark.py --quick` ใช้เพียง smoke test และเมื่อไม่ได้ระบุ `--output` จะเขียน `results/benchmark_quick.json`/`.csv` แยกจากผลเต็ม
+
 ก่อน `demo.py`/`benchmark.py` หยุด server และอ่าน snapshot จะเรียก `wait_until_idle(quiet_period_s=0.15, timeout_s=3.0)` ซึ่งรอทั้ง worker task เป็นศูนย์และไม่มี datagram ใหม่ตลอด quiet period; timeout ถือเป็น run ที่ใช้สรุปผลไม่ได้ วิธีนี้กันการอ่าน metrics/latest state ขณะที่งานยังค้าง แต่ไม่ได้เปลี่ยน protocol wire semantics
 
 ค่า rate ใน `summary` ใช้ผลรวมนับตัวเศษหารผลรวมนับตัวส่วนข้าม repeats ไม่ใช่ค่าเฉลี่ยเปอร์เซ็นต์ต่อ run ค่า bytes/value ใช้ aggregate bytes หาร aggregate generated values และค่า P95 pool raw latency samples ข้าม repeats; เมื่อไม่มี sample ใช้ `null` ไม่ใช้ศูนย์
 
-การเปรียบเทียบ MUST ใช้ workload, loss probability, duration และจำนวน sensor เดียวกัน แต่ seed เดียวกันไม่รับประกันว่า drop จะตกบน logical event เดียวกัน เพราะ ACK/retry ใช้ random draws เพิ่ม จึงควรใช้หลาย repeats และไม่ควรสรุปว่า DART "เร็วกว่า UDP/TCP ทุกกรณี" จากผลบน loopback
+การเปรียบเทียบ MUST ใช้ workload, loss probability, duration และจำนวน sensor เดียวกัน แต่ seed เดียวกันไม่รับประกันว่า drop จะตกบน logical event เดียวกัน เพราะ ACK/retry ใช้ random draws เพิ่ม จึงควรใช้หลาย repeats และไม่ควรสรุปว่า DART "เร็วกว่า UDP/TCP ทุกกรณี" จากผลบน loopback Benchmark นี้เปรียบเทียบเฉพาะ experimental policies ที่ reuse DART wire format (`raw`, `reliable-all`, `dart`) ไม่ได้รัน TCP, MQTT หรือ CoAP implementation จึงใช้อ้าง performance เหนือ protocol เหล่านั้นไม่ได้
 
 ## 18. Limitations and non-goals
 
