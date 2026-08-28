@@ -1,0 +1,414 @@
+{
+  "project": "DART v1",
+  "generated_at": "2026-08-28T12:17:10.010179+07:00",
+  "demo_configuration": {
+    "drop_first_critical_ack": true,
+    "policy": "dart"
+  },
+  "simulation": {
+    "policy": "dart",
+    "server": [
+      "127.0.0.1",
+      50509
+    ],
+    "requested_sensors": 5,
+    "registered_sensors": 5,
+    "registration_failures": [],
+    "duration_requested_s": 6.0,
+    "elapsed_ms": 6429.844,
+    "sample_interval_s": 0.2,
+    "batch_size": 5,
+    "alert_all_sensors": false,
+    "alerts_per_sensor": 1,
+    "loss_rate": 0.1,
+    "corrupt_rate": 0.0,
+    "delay_ms": 0.0,
+    "jitter_ms": 0.0,
+    "workload_fingerprint": "9773c67ea0dd8a2742e57668b52d18f894f9266d5ce6adc5602bf234699d0bbb",
+    "workers": [
+      {
+        "sensor_id": 1,
+        "readings_generated": 30,
+        "batches_generated": 6,
+        "latest_generated": 12,
+        "alerts_generated": 1,
+        "alerts_locally_successful": 1,
+        "reliable_failures": 0,
+        "scheduled_event_count": 43,
+        "max_schedule_lateness_ms": 567.763,
+        "final_latest_value": 18.25,
+        "workload_fingerprint": "fce00d89e372208ee836f3317ea2361a6d2fae1b7d55f220b7971b8fa426ee24",
+        "alert_results": [
+          {
+            "success": true,
+            "sequence": 165578910,
+            "attempts": 3,
+            "latency_ms": 764.177,
+            "status_code": 409,
+            "detail": "acknowledged"
+          }
+        ]
+      },
+      {
+        "sensor_id": 2,
+        "readings_generated": 30,
+        "batches_generated": 6,
+        "latest_generated": 12,
+        "alerts_generated": 0,
+        "alerts_locally_successful": 0,
+        "reliable_failures": 0,
+        "scheduled_event_count": 42,
+        "max_schedule_lateness_ms": 4.891,
+        "final_latest_value": 28.25,
+        "workload_fingerprint": "f889a7d8b3ff89296baba47b2086258a414d1e609a788693a37a9f032f17845e",
+        "alert_results": []
+      },
+      {
+        "sensor_id": 3,
+        "readings_generated": 30,
+        "batches_generated": 6,
+        "latest_generated": 12,
+        "alerts_generated": 0,
+        "alerts_locally_successful": 0,
+        "reliable_failures": 0,
+        "scheduled_event_count": 42,
+        "max_schedule_lateness_ms": 4.515,
+        "final_latest_value": 38.25,
+        "workload_fingerprint": "b71e90db2db38eaebdf08791871c36fbe3c9ecc2188a7c8665c6682f4a38f257",
+        "alert_results": []
+      },
+      {
+        "sensor_id": 4,
+        "readings_generated": 30,
+        "batches_generated": 6,
+        "latest_generated": 12,
+        "alerts_generated": 0,
+        "alerts_locally_successful": 0,
+        "reliable_failures": 0,
+        "scheduled_event_count": 42,
+        "max_schedule_lateness_ms": 4.713,
+        "final_latest_value": 48.25,
+        "workload_fingerprint": "28cc57a8e5fc7832c7af65ff1404636644b6f162b66c2f2ad75b20f67fa5ab95",
+        "alert_results": []
+      },
+      {
+        "sensor_id": 5,
+        "readings_generated": 30,
+        "batches_generated": 6,
+        "latest_generated": 12,
+        "alerts_generated": 0,
+        "alerts_locally_successful": 0,
+        "reliable_failures": 0,
+        "scheduled_event_count": 42,
+        "max_schedule_lateness_ms": 3.93,
+        "final_latest_value": 58.25,
+        "workload_fingerprint": "e71603c4b6ca4636a55d2ff05dea93a57cb1a30f163e6d9f52ff2cec28741156",
+        "alert_results": []
+      }
+    ],
+    "clients": [
+      {
+        "started_at_ms": 1787894223533,
+        "messages_generated": {
+          "REGISTER_REQ": 1,
+          "LATEST_UPDATE": 12,
+          "DATA_BATCH": 6,
+          "CRITICAL_ALERT": 1
+        },
+        "responses_received": {
+          "REGISTER_RES": 1,
+          "ACK": 1
+        },
+        "retransmissions": 3,
+        "decode_errors": 0,
+        "checksum_errors": 0,
+        "reliable_successes": 2,
+        "reliable_failures": 0,
+        "critical_successes": 1,
+        "critical_failures": 0,
+        "reliable_latency_ms": {
+          "count": 2,
+          "median": 511.29,
+          "p95": 738.888,
+          "max": 764.177
+        },
+        "sensor_id": 1,
+        "name": "virtual-sensor-001",
+        "client_instance_id": "42112e97374e19e89ac30785a3fb09b1",
+        "session_id": 331903326,
+        "local_address": [
+          "127.0.0.1",
+          52791
+        ],
+        "transmitter": {
+          "attempted_packets": 23,
+          "sent_packets": 19,
+          "dropped_packets": 4,
+          "corrupted_packets": 0,
+          "attempted_bytes": 1877,
+          "sent_bytes": 1437
+        }
+      },
+      {
+        "started_at_ms": 1787894223792,
+        "messages_generated": {
+          "REGISTER_REQ": 1,
+          "LATEST_UPDATE": 12,
+          "DATA_BATCH": 6
+        },
+        "responses_received": {
+          "REGISTER_RES": 1
+        },
+        "retransmissions": 0,
+        "decode_errors": 0,
+        "checksum_errors": 0,
+        "reliable_successes": 1,
+        "reliable_failures": 0,
+        "critical_successes": 0,
+        "critical_failures": 0,
+        "reliable_latency_ms": {
+          "count": 1,
+          "median": 0.732,
+          "p95": 0.732,
+          "max": 0.732
+        },
+        "sensor_id": 2,
+        "name": "virtual-sensor-002",
+        "client_instance_id": "6cece5cc1d68da9eb015f79ad8d7f9b0",
+        "session_id": 1080966047,
+        "local_address": [
+          "127.0.0.1",
+          50304
+        ],
+        "transmitter": {
+          "attempted_packets": 19,
+          "sent_packets": 15,
+          "dropped_packets": 4,
+          "corrupted_packets": 0,
+          "attempted_bytes": 1177,
+          "sent_bytes": 965
+        }
+      },
+      {
+        "started_at_ms": 1787894223793,
+        "messages_generated": {
+          "REGISTER_REQ": 1,
+          "LATEST_UPDATE": 12,
+          "DATA_BATCH": 6
+        },
+        "responses_received": {
+          "REGISTER_RES": 1
+        },
+        "retransmissions": 0,
+        "decode_errors": 0,
+        "checksum_errors": 0,
+        "reliable_successes": 1,
+        "reliable_failures": 0,
+        "critical_successes": 0,
+        "critical_failures": 0,
+        "reliable_latency_ms": {
+          "count": 1,
+          "median": 0.789,
+          "p95": 0.789,
+          "max": 0.789
+        },
+        "sensor_id": 3,
+        "name": "virtual-sensor-003",
+        "client_instance_id": "08ff8f2b25d183b4b6b1b85b0e754f66",
+        "session_id": 3062099676,
+        "local_address": [
+          "127.0.0.1",
+          60328
+        ],
+        "transmitter": {
+          "attempted_packets": 19,
+          "sent_packets": 15,
+          "dropped_packets": 4,
+          "corrupted_packets": 0,
+          "attempted_bytes": 1177,
+          "sent_bytes": 901
+        }
+      },
+      {
+        "started_at_ms": 1787894223794,
+        "messages_generated": {
+          "REGISTER_REQ": 1,
+          "LATEST_UPDATE": 12,
+          "DATA_BATCH": 6
+        },
+        "responses_received": {
+          "REGISTER_RES": 1
+        },
+        "retransmissions": 0,
+        "decode_errors": 0,
+        "checksum_errors": 0,
+        "reliable_successes": 1,
+        "reliable_failures": 0,
+        "critical_successes": 0,
+        "critical_failures": 0,
+        "reliable_latency_ms": {
+          "count": 1,
+          "median": 1.811,
+          "p95": 1.811,
+          "max": 1.811
+        },
+        "sensor_id": 4,
+        "name": "virtual-sensor-004",
+        "client_instance_id": "6325b196739abb8c625020e9e50ad7e3",
+        "session_id": 1424642320,
+        "local_address": [
+          "127.0.0.1",
+          54107
+        ],
+        "transmitter": {
+          "attempted_packets": 19,
+          "sent_packets": 15,
+          "dropped_packets": 4,
+          "corrupted_packets": 0,
+          "attempted_bytes": 1177,
+          "sent_bytes": 997
+        }
+      },
+      {
+        "started_at_ms": 1787894223796,
+        "messages_generated": {
+          "REGISTER_REQ": 1,
+          "LATEST_UPDATE": 12,
+          "DATA_BATCH": 6
+        },
+        "responses_received": {
+          "REGISTER_RES": 1
+        },
+        "retransmissions": 0,
+        "decode_errors": 0,
+        "checksum_errors": 0,
+        "reliable_successes": 1,
+        "reliable_failures": 0,
+        "critical_successes": 0,
+        "critical_failures": 0,
+        "reliable_latency_ms": {
+          "count": 1,
+          "median": 1.66,
+          "p95": 1.66,
+          "max": 1.66
+        },
+        "sensor_id": 5,
+        "name": "virtual-sensor-005",
+        "client_instance_id": "e93bce89b84b2d89e49a2c8ad94631bf",
+        "session_id": 3374050425,
+        "local_address": [
+          "127.0.0.1",
+          63045
+        ],
+        "transmitter": {
+          "attempted_packets": 19,
+          "sent_packets": 16,
+          "dropped_packets": 3,
+          "corrupted_packets": 0,
+          "attempted_bytes": 1177,
+          "sent_bytes": 1010
+        }
+      }
+    ],
+    "totals": {
+      "readings_generated": 150,
+      "batches_generated": 30,
+      "latest_generated": 60,
+      "alerts_generated": 1,
+      "alerts_locally_successful": 1,
+      "reliable_failures": 0,
+      "attempted_packets": 99,
+      "sent_packets": 80,
+      "simulated_dropped_packets": 19,
+      "attempted_bytes": 6585,
+      "sent_bytes": 5310,
+      "retransmissions": 3
+    }
+  },
+  "server": {
+    "started_at_ms": 1787894223531,
+    "stopped_at_ms": 1787894230009,
+    "duration_ms": 6478,
+    "packets_received": 80,
+    "bytes_received": 5310,
+    "decode_errors": 0,
+    "checksum_errors": 0,
+    "expired_packets": 0,
+    "unregistered_packets": 0,
+    "duplicate_packets": 1,
+    "stale_latest_discarded": 0,
+    "data_batches_accepted": 25,
+    "latest_updates_accepted": 48,
+    "readings_received": 125,
+    "critical_alerts_received": 1,
+    "acks_sent": 1,
+    "acks_simulated_dropped": 1,
+    "errors_sent": 0,
+    "messages_by_type": {
+      "REGISTER_REQ": 5,
+      "LATEST_UPDATE": 48,
+      "DATA_BATCH": 25,
+      "CRITICAL_ALERT": 2
+    },
+    "critical_latency_ms": {
+      "count": 1,
+      "median": 1.0,
+      "p95": 1.0,
+      "max": 1.0,
+      "samples": [
+        1.0
+      ]
+    },
+    "active_sessions": 5,
+    "latest_values": {
+      "session_1080966047.sensor_2.POSITION_X": {
+        "value": 28.25,
+        "timestamp_ms": 1787894229300,
+        "sequence": 1754648250
+      },
+      "session_1424642320.sensor_4.POSITION_X": {
+        "value": 48.25,
+        "timestamp_ms": 1787894229300,
+        "sequence": 3815082360
+      },
+      "session_331903326.sensor_1.POSITION_X": {
+        "value": 17.5,
+        "timestamp_ms": 1787894228801,
+        "sequence": 165578919
+      },
+      "session_3374050425.sensor_5.POSITION_X": {
+        "value": 58.25,
+        "timestamp_ms": 1787894229304,
+        "sequence": 1511168179
+      },
+      "session_3062099676.sensor_3.POSITION_X": {
+        "value": 38.25,
+        "timestamp_ms": 1787894229302,
+        "sequence": 1167696022
+      }
+    },
+    "server_transmitter": {
+      "attempted_packets": 6,
+      "sent_packets": 6,
+      "dropped_packets": 0,
+      "corrupted_packets": 0,
+      "attempted_bytes": 1109,
+      "sent_bytes": 1109
+    }
+  },
+  "acceptance": {
+    "passed": true,
+    "checks": {
+      "all_sensors_registered": true,
+      "server_received_normal_readings": true,
+      "server_received_latest_values": true,
+      "critical_alert_delivered": true,
+      "wire_decode_clean": true,
+      "all_critical_alerts_confirmed": true,
+      "critical_alerts_processed_exactly_once": true,
+      "forced_critical_ack_drop_observed": true,
+      "critical_retransmission_observed": true,
+      "duplicate_suppression_observed": true
+    }
+  }
+}
