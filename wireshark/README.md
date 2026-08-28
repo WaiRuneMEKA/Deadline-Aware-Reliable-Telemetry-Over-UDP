@@ -10,7 +10,8 @@
 - คำนวณและตรวจ IEEE/zlib CRC-32 โดยถือว่า checksum bytes ที่ offset 36–39 เป็นศูนย์
 - แยก `DATA_BATCH` เป็น metric records และแยก `LATEST_UPDATE` เป็น metric ID กับค่า float
 - แสดง payload ชนิดอื่นเป็น UTF-8 และส่ง JSON ให้ JSON dissector ของ Wireshark เมื่อใช้งานได้
-- แจ้ง malformed packet และ checksum mismatch ผ่าน Expert Information
+- แจ้ง datagram เกิน 1,200 ไบต์, metric ID ที่ไม่รู้จัก, ค่า float ที่เป็น
+  NaN/Infinity, malformed payload และ checksum mismatch ผ่าน Expert Information
 
 ## ติดตั้ง
 

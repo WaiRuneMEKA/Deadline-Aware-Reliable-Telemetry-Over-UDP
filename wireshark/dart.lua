@@ -11,6 +11,13 @@ end
 
 local DART_PORT = 9999
 local HEADER_LENGTH = 40
+local MAX_DATAGRAM_LENGTH = 1200
+local BATCH_COUNT_LENGTH = 2
+local BATCH_RECORD_LENGTH = 7
+local MAX_BATCH_READINGS = math.floor(
+    (MAX_DATAGRAM_LENGTH - HEADER_LENGTH - BATCH_COUNT_LENGTH)
+        / BATCH_RECORD_LENGTH
+)
 local DART_MAGIC = "DART"
 local DART_VERSION = 1
 
@@ -252,6 +259,10 @@ local function looks_like_json(text)
     return first_character == "{" or first_character == "["
 end
 
+local function is_finite(value)
+    return value == value and value ~= math.huge and value ~= -math.huge
+end
+
 local function decode_text_or_json(payload_range, payload_tree, pinfo)
     local payload_text = payload_range:string()
     if looks_like_json(payload_text) then
@@ -274,7 +285,7 @@ end
 
 local function decode_data_batch(payload_range, payload_tree)
     local length = payload_range:len()
-    if length < 2 then
+    if length < BATCH_COUNT_LENGTH then
         payload_tree:add_proto_expert_info(
             experts.invalid_payload,
             "DATA_BATCH requires a 2-byte metric count"
@@ -282,10 +293,30 @@ local function decode_data_batch(payload_range, payload_tree)
         return
     end
 
-    local metric_count = payload_range(0, 2):uint()
-    payload_tree:add(fields.batch_count, payload_range(0, 2))
+    local metric_count = payload_range(0, BATCH_COUNT_LENGTH):uint()
+    local count_item = payload_tree:add(
+        fields.batch_count,
+        payload_range(0, BATCH_COUNT_LENGTH)
+    )
 
-    local required_length = 2 + metric_count * 7
+    if metric_count == 0 then
+        count_item:add_proto_expert_info(
+            experts.invalid_payload,
+            "DATA_BATCH must contain at least one metric record"
+        )
+    elseif metric_count > MAX_BATCH_READINGS then
+        count_item:add_proto_expert_info(
+            experts.invalid_payload,
+            string.format(
+                "DATA_BATCH count %u exceeds the DART v1 maximum of %u",
+                metric_count,
+                MAX_BATCH_READINGS
+            )
+        )
+    end
+
+    local required_length = BATCH_COUNT_LENGTH
+        + metric_count * BATCH_RECORD_LENGTH
     if length ~= required_length then
         payload_tree:add_proto_expert_info(
             experts.invalid_payload,
@@ -298,22 +329,49 @@ local function decode_data_batch(payload_range, payload_tree)
         )
     end
 
-    local cursor = 2
-    for record_number = 1, metric_count do
-        if cursor + 7 > length then
+    local cursor = BATCH_COUNT_LENGTH
+    local records_to_decode = math.min(metric_count, MAX_BATCH_READINGS)
+    for record_number = 1, records_to_decode do
+        if cursor + BATCH_RECORD_LENGTH > length then
             break
         end
 
-        local record_range = payload_range(cursor, 7)
+        local record_range = payload_range(cursor, BATCH_RECORD_LENGTH)
         local record_tree = payload_tree:add(
             fields.batch_record,
             record_range,
             string.format("Metric record %u", record_number)
         )
-        record_tree:add(fields.metric_id, payload_range(cursor, 1))
-        record_tree:add(fields.metric_value, payload_range(cursor + 1, 4))
+
+        local metric_range = payload_range(cursor, 1)
+        local metric_id = metric_range:uint()
+        local metric_item = record_tree:add(fields.metric_id, metric_range)
+        if not metric_ids[metric_id] then
+            metric_item:add_proto_expert_info(
+                experts.invalid_payload,
+                string.format(
+                    "Metric record %u uses unknown metric ID %u",
+                    record_number,
+                    metric_id
+                )
+            )
+        end
+
+        local value_range = payload_range(cursor + 1, 4)
+        local metric_value = value_range:float()
+        local value_item = record_tree:add(fields.metric_value, value_range)
+        if not is_finite(metric_value) then
+            value_item:add_proto_expert_info(
+                experts.invalid_payload,
+                string.format(
+                    "Metric record %u contains a non-finite float value",
+                    record_number
+                )
+            )
+        end
+
         record_tree:add(fields.metric_age_ms, payload_range(cursor + 5, 2))
-        cursor = cursor + 7
+        cursor = cursor + BATCH_RECORD_LENGTH
     end
 end
 
@@ -330,8 +388,28 @@ local function decode_latest_update(payload_range, payload_tree)
         return
     end
 
-    payload_tree:add(fields.metric_id, payload_range(0, 1))
-    payload_tree:add(fields.metric_value, payload_range(1, 4))
+    local metric_range = payload_range(0, 1)
+    local metric_id = metric_range:uint()
+    local metric_item = payload_tree:add(fields.metric_id, metric_range)
+    if not metric_ids[metric_id] then
+        metric_item:add_proto_expert_info(
+            experts.invalid_payload,
+            string.format(
+                "LATEST_UPDATE uses unknown metric ID %u",
+                metric_id
+            )
+        )
+    end
+
+    local value_range = payload_range(1, 4)
+    local metric_value = value_range:float()
+    local value_item = payload_tree:add(fields.metric_value, value_range)
+    if not is_finite(metric_value) then
+        value_item:add_proto_expert_info(
+            experts.invalid_payload,
+            "LATEST_UPDATE contains a non-finite float value"
+        )
+    end
 end
 
 function dart.dissector(buffer, pinfo, tree)
@@ -392,6 +470,16 @@ function dart.dissector(buffer, pinfo, tree)
         buffer(),
         string.format("DART v%u: %s", version, message_name)
     )
+    if captured_length > MAX_DATAGRAM_LENGTH then
+        packet_tree:add_proto_expert_info(
+            experts.invalid_payload,
+            string.format(
+                "DART datagram is %u bytes; v1 maximum is %u bytes",
+                captured_length,
+                MAX_DATAGRAM_LENGTH
+            )
+        )
+    end
     local header_tree = packet_tree:add(
         dart,
         buffer(0, HEADER_LENGTH),
@@ -503,6 +591,16 @@ function dart.dissector(buffer, pinfo, tree)
         else
             decode_text_or_json(payload_range, payload_tree, pinfo)
         end
+    elseif message_type == 3 then
+        packet_tree:add_proto_expert_info(
+            experts.invalid_payload,
+            "DATA_BATCH payload is missing its 2-byte metric count"
+        )
+    elseif message_type == 4 then
+        packet_tree:add_proto_expert_info(
+            experts.invalid_payload,
+            "LATEST_UPDATE requires exactly 5 payload bytes, but none are available"
+        )
     end
 
     if actual_payload_length > declared_payload_length then
