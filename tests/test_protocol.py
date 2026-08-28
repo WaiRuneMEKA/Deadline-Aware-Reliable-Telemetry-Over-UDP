@@ -12,6 +12,7 @@ from dart.protocol import (
     HEADER_STRUCT,
     LATEST_STRUCT,
     MAGIC,
+    MAX_BATCH_READINGS,
     MAX_DATAGRAM_SIZE,
     MAX_PAYLOAD_SIZE,
     READING_STRUCT,
@@ -297,9 +298,13 @@ class PayloadCodecTests(unittest.TestCase):
             self.assertEqual(actual.age_ms, expected.age_ms)
 
     def test_batch_boundary_and_invalid_batch_payloads(self):
-        maximum = (MAX_PAYLOAD_SIZE - BATCH_COUNT_STRUCT.size) // READING_STRUCT.size
-        readings = [Reading(MetricId.TEMPERATURE_C, float(i)) for i in range(maximum)]
-        self.assertLessEqual(len(encode_readings(readings)), MAX_PAYLOAD_SIZE)
+        readings = [
+            Reading(MetricId.TEMPERATURE_C, float(i))
+            for i in range(MAX_BATCH_READINGS)
+        ]
+        maximum_payload = encode_readings(readings)
+        self.assertLessEqual(len(maximum_payload), MAX_PAYLOAD_SIZE)
+        self.assertEqual(len(decode_readings(maximum_payload)), MAX_BATCH_READINGS)
 
         with self.assertRaises(PayloadError):
             encode_readings([])
@@ -311,6 +316,16 @@ class PayloadCodecTests(unittest.TestCase):
             decode_readings(BATCH_COUNT_STRUCT.pack(0))
         with self.assertRaises(PayloadError):
             decode_readings(BATCH_COUNT_STRUCT.pack(1) + b"short")
+
+        too_many_payload = BATCH_COUNT_STRUCT.pack(MAX_BATCH_READINGS + 1) + (
+            READING_STRUCT.pack(int(MetricId.TEMPERATURE_C), 1.0, 0)
+            * (MAX_BATCH_READINGS + 1)
+        )
+        with self.assertRaisesRegex(
+            PayloadError,
+            rf"at most {MAX_BATCH_READINGS} readings",
+        ):
+            decode_readings(too_many_payload)
 
         unknown_metric = BATCH_COUNT_STRUCT.pack(1) + READING_STRUCT.pack(255, 1.0, 0)
         with self.assertRaises(PayloadError):

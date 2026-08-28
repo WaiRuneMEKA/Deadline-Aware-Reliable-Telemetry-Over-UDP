@@ -2,9 +2,24 @@
 
 from __future__ import annotations
 
+from argparse import Namespace
+import csv
+from pathlib import Path
+import tempfile
 import unittest
 
-from benchmark import summarize, validate_equal_workload
+from benchmark import (
+    CASE_SEED_STRIDE,
+    DEFAULT_BENCHMARK_OUTPUT,
+    DEFAULT_QUICK_OUTPUT,
+    SERVER_SEED_OFFSET,
+    build_report,
+    derive_case_seed,
+    resolve_output_path,
+    summarize,
+    validate_equal_workload,
+    write_csv,
+)
 from dart.simulator import _scheduled_offsets
 
 
@@ -43,6 +58,8 @@ class EqualWorkloadValidationTests(unittest.TestCase):
         latest=15,
         alerts=9,
         fingerprint="workload-v1",
+        base_seed=100,
+        case_seed=2_000_100,
     ):
         return {
             "policy": policy,
@@ -53,6 +70,10 @@ class EqualWorkloadValidationTests(unittest.TestCase):
             "latest_generated": latest,
             "alerts_generated": alerts,
             "workload_fingerprint": fingerprint,
+            "base_seed": base_seed,
+            "case_seed": case_seed,
+            "simulation_seed": case_seed,
+            "server_seed": case_seed + SERVER_SEED_OFFSET,
         }
 
     def test_accepts_equal_signatures_with_different_result_groups(self):
@@ -99,6 +120,108 @@ class EqualWorkloadValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "workload differs across policies"):
             validate_equal_workload(cases)
+
+    def test_rejects_mismatched_seed_pairing_even_when_workload_counts_match(self):
+        cases = [
+            self.case("raw", 0.2, 1),
+            self.case("reliable-all", 0.2, 1),
+            self.case("dart", 0.2, 1, case_seed=3_000_100),
+        ]
+
+        with self.assertRaisesRegex(RuntimeError, "workload differs across policies"):
+            validate_equal_workload(cases)
+
+
+class BenchmarkProvenanceTests(unittest.TestCase):
+    def test_case_seeds_are_unique_and_server_namespace_does_not_overlap(self):
+        seeds = [
+            derive_case_seed(
+                100,
+                loss_rate_index=loss_rate_index,
+                repeat=repeat,
+                repeat_count=3,
+            )
+            for loss_rate_index in range(4)
+            for repeat in range(1, 4)
+        ]
+
+        self.assertEqual(seeds[0], 100)
+        self.assertEqual(len(seeds), len(set(seeds)))
+        self.assertEqual(seeds[1] - seeds[0], CASE_SEED_STRIDE)
+        server_seeds = {seed + SERVER_SEED_OFFSET for seed in seeds}
+        self.assertTrue(set(seeds).isdisjoint(server_seeds))
+
+    def test_case_seed_validation_rejects_invalid_coordinates(self):
+        invalid = (
+            {"loss_rate_index": -1, "repeat": 1, "repeat_count": 1},
+            {"loss_rate_index": 0, "repeat": 1, "repeat_count": 0},
+            {"loss_rate_index": 0, "repeat": 0, "repeat_count": 1},
+            {"loss_rate_index": 0, "repeat": 2, "repeat_count": 1},
+        )
+        for coordinates in invalid:
+            with self.subTest(**coordinates):
+                with self.assertRaises(ValueError):
+                    derive_case_seed(100, **coordinates)
+
+    def test_quick_uses_separate_default_but_explicit_output_always_wins(self):
+        self.assertEqual(
+            resolve_output_path(None, quick=False), Path(DEFAULT_BENCHMARK_OUTPUT)
+        )
+        self.assertEqual(
+            resolve_output_path(None, quick=True), Path(DEFAULT_QUICK_OUTPUT)
+        )
+        explicit = "custom/result.json"
+        self.assertEqual(
+            resolve_output_path(explicit, quick=False), Path(explicit)
+        )
+        self.assertEqual(resolve_output_path(explicit, quick=True), Path(explicit))
+
+    def test_json_report_and_csv_include_reproduction_seeds(self):
+        args = Namespace(
+            quick=False,
+            sensors=3,
+            duration=2.5,
+            alerts_per_sensor=3,
+            repeats=2,
+            loss_rates=[0.0, 0.2],
+            delay_ms=0.0,
+            jitter_ms=0.0,
+            seed=700,
+        )
+        case = {
+            "policy": "dart",
+            "loss_rate": 0.2,
+            "loss_rate_index": 1,
+            "repeat": 2,
+            "base_seed": 700,
+            "case_seed": 3_000_700,
+            "simulation_seed": 3_000_700,
+            "server_seed": 3_050_700,
+            "critical_server_accept_latency_samples_ms": [1.25],
+            "critical_ack_latency_samples_ms": [2.5],
+        }
+
+        report = build_report(args, [case], [])
+
+        self.assertEqual(report["method"]["base_seed"], 700)
+        self.assertIn(
+            "case_seed = base_seed",
+            report["method"]["seed_derivation"]["formula"],
+        )
+        self.assertEqual(report["cases"][0]["case_seed"], 3_000_700)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            csv_path = Path(temporary_directory) / "benchmark.csv"
+            write_csv(csv_path, [case])
+            with csv_path.open(newline="", encoding="utf-8") as stream:
+                row = next(csv.DictReader(stream))
+
+            self.assertNotIn(b"\r\n", csv_path.read_bytes())
+
+        self.assertEqual(row["base_seed"], "700")
+        self.assertEqual(row["case_seed"], "3000700")
+        self.assertEqual(row["simulation_seed"], "3000700")
+        self.assertEqual(row["server_seed"], "3050700")
 
 
 class BenchmarkSummaryTests(unittest.TestCase):
