@@ -10,6 +10,22 @@ one idea: **not every sensor message needs the same delivery policy**.
 - **Author:** เมตัส พานิช กายย์
 - **Student ID:** 6710405460
 
+## ไฟล์ส่งงาน / Submission files
+
+Repository นี้เป็นชุดส่งงานหลักตามประกาศล่าสุดของ TA โดยผู้ตรวจสามารถเปิด
+สามรายการบังคับได้จากตารางนี้โดยตรง:
+
+| รายการบังคับ | ไฟล์หรือลิงก์ | สถานะ |
+|---|---|---|
+| PDF รายงานออกแบบ protocol | [`DART_Protocol_Report_6710405460.pdf`](DART_Protocol_Report_6710405460.pdf) — รายงาน A4 จำนวน 16 หน้า | พร้อม |
+| Source code | [`dart/`](dart/), [`demo.py`](demo.py), [`benchmark.py`](benchmark.py), [`tests/`](tests/) และ [`wireshark/`](wireshark/) ([ดาวน์โหลด repository เป็น ZIP](https://github.com/WaiRuneMEKA/Deadline-Aware-Reliable-Telemetry-Over-UDP/archive/refs/heads/main.zip)) | พร้อม |
+| VDO นำเสนอ | **รอเพิ่มลิงก์วิดีโอจริงหลังการอัดและอัปโหลดเสร็จ** | ยังไม่ครบ |
+
+ไฟล์ประกอบการนำเสนอ ได้แก่
+[`submission/DART_Presentation.pptx`](submission/DART_Presentation.pptx) และ
+[`submission/VIDEO_SCRIPT.md`](submission/VIDEO_SCRIPT.md) ส่วน source code
+ตัวจริงคือไฟล์ใน repository ไม่ใช่ ZIP ที่สร้างแยกไว้
+
 ## Delivery policies
 
 - Normal readings are packed into compact `DATA_BATCH` datagrams.
@@ -40,23 +56,10 @@ Its purpose is to demonstrate the protocol, not to build a production IoT app.
 - Standard-library unit and localhost integration tests.
 - Protocol specification, course alignment, assignment checklist, and
   presentation/demo guide.
-- Project hand-in artifacts: the protocol report at `docs.pdf`, plus a
+- Project hand-in artifacts: the protocol report at
+  `DART_Protocol_Report_6710405460.pdf`, plus a
   PowerPoint deck with speaker notes and a timed Thai video script under
   `submission/`.
-
-## Submission package
-
-- [`docs.pdf`](docs.pdf)
-  is the 16-page protocol-design report grounded in Chapters 1-3.
-- [`submission/DART_Presentation.pptx`](submission/DART_Presentation.pptx)
-  is a 15-slide presentation with presenter notes and per-slide source blocks.
-- [`submission/VIDEO_SCRIPT.md`](submission/VIDEO_SCRIPT.md) is the timed
-  recording script and live-demo checklist.
-
-Before submitting, verify the author/course information in every artifact,
-record the required video with the presenter visible for part of the narration,
-and verify all uploaded links. The GitHub repository itself is the canonical
-source tree; GitHub can also generate a source archive for a tagged revision.
 
 ## Requirements
 
@@ -230,7 +233,7 @@ repository-root/
 ├── wireshark/dart.lua    # DART protocol dissector
 ├── docs/                 # Specification, requirement map, and demo material
 ├── results/              # Generated JSON/CSV evidence
-├── docs.pdf              # 16-page protocol-design report
+├── DART_Protocol_Report_6710405460.pdf  # 16-page protocol-design report
 └── submission/           # PowerPoint deck and recording script
 ```
 
