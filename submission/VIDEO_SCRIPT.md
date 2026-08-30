@@ -143,5 +143,7 @@ python3 -B -m unittest tests.test_protocol -v
 - ตรวจความยาวไม่เกิน 15 นาที
 - ตรวจว่าเห็นผู้จัดทำในช่วงบรรยายอย่างชัดเจน
 - ตรวจว่า terminal/Wireshark อ่านได้และไม่มีข้อมูลส่วนตัวติดจอ
-- อัปโหลด PDF, source code และวิดีโอตามช่องทางที่รายวิชากำหนด
-- ทดลองเปิด video link ด้วยหน้าต่าง private/incognito ก่อนส่ง
+- อัปโหลดวิดีโอไปยังบริการที่ผู้ตรวจเปิดได้ แล้วนำ URL จริงไปแทนสถานะ
+  `ยังไม่ครบ` ในตาราง `Submission files` ของ `README.md`
+- ทดลองเปิด video link ด้วยหน้าต่าง private/incognito จากนั้น commit และ push
+  การแก้ไขขึ้น `main` ก่อนส่ง GitHub URL ให้อาจารย์
