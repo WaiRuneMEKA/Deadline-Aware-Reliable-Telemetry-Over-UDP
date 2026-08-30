@@ -16,7 +16,7 @@
 | เลือก Transport service model: UDP หรือ TCP พร้อมเหตุผล | [PROTOCOL_SPEC](PROTOCOL_SPEC.md) §3 และ [COURSE_ALIGNMENT](COURSE_ALIGNMENT.md) §2.5 | **พร้อม** |
 | ออกแบบและตั้งชื่อ Application-Layer Protocol | DART v1: Deadline-Aware Reliable Telemetry; exact 40-byte wire header ใน [PROTOCOL_SPEC](PROTOCOL_SPEC.md) §4-5 | **พร้อม** |
 | กำหนด request/response ระหว่าง Client และ Server | Message types 1-11, payload, status และ flows ใน [PROTOCOL_SPEC](PROTOCOL_SPEC.md) §6-16 | **พร้อม** |
-| ส่ง PDF ที่ตอบข้อ 1 โดยละเอียด | [docs.pdf](../docs.pdf) 16 หน้า ครอบคลุมปัญหา transport wire format flow code test benchmark และข้อจำกัด | **พร้อม:** ตรวจข้อมูลวิชา/ผู้จัดทำและไฟล์รอบสุดท้ายก่อนอัปโหลด |
+| ส่ง PDF ที่ตอบข้อ 1 โดยละเอียด | [DART_Protocol_Report_6710405460.pdf](../DART_Protocol_Report_6710405460.pdf) 16 หน้า ครอบคลุมปัญหา transport wire format flow code test benchmark และข้อจำกัด | **พร้อม:** ตรวจข้อมูลวิชา/ผู้จัดทำและไฟล์รอบสุดท้ายแล้ว |
 | เขียน client/server ที่ใช้ protocol ที่ออกแบบ | `dart/client.py`, `dart/server.py`, `dart/protocol.py`, `dart/simulator.py` | **พร้อม** |
 | พิมพ์ messages, status code และ status phrase ที่ส่ง/รับ | `packet_summary()` และ client/server logs; เดโม ACK `202 ACCEPTED`, `409 DUPLICATE`, ERROR flows | **พร้อม** |
 | ส่ง source code | public repository นี้รวม implementation, automated tests, README, docs, Wireshark และ measured results; ใช้ GitHub URL, tagged revision หรือ archive ที่ GitHub สร้างจาก commit ที่ส่ง | **พร้อม:** อัปโหลดตามช่องทางวิชาและบันทึก commit/tag ที่ใช้ส่ง |
@@ -36,4 +36,15 @@
 
 ## Final hand-in gate
 
-ก่อนกดส่งต้องมีครบสามชิ้นตาม PDF: **protocol design PDF**, **source code**, และ **วิดีโอประมาณไม่เกิน 15 นาทีที่เห็นผู้จัดทำช่วงบรรยาย** PDF, PPTX, source, demo และผลวัดพร้อมแล้ว งานที่ผู้จัดทำยังต้องทำเองคืออัดวิดีโอโดยให้เห็นผู้จัดทำบางส่วน, อัปโหลด, บันทึก commit/tag ที่ใช้ส่ง และตรวจว่า link เปิดได้จากบัญชีอื่น
+ตามประกาศล่าสุดของ TA สามารถส่ง **GitHub URL เพียงลิงก์เดียว** ได้ แต่ใน
+repository ต้องมีครบสามรายการต่อไปนี้:
+
+| รายการ | ตำแหน่งใน repository | สถานะ |
+|---|---|---|
+| PDF | [`DART_Protocol_Report_6710405460.pdf`](../DART_Protocol_Report_6710405460.pdf) | **พร้อม** |
+| Source code | `dart/`, `demo.py`, `benchmark.py`, `tests/` และ `wireshark/` | **พร้อม** |
+| VDO หรือ link VDO | ต้องเพิ่ม URL จริงในตาราง Submission files ของ `README.md` หลังอัปโหลด | **ยังไม่ครบ** |
+
+ก่อนส่งจริงให้ตรวจว่าวิดีโอไม่เกินเวลาที่กำหนด เห็นผู้จัดทำในช่วงบรรยาย
+ลิงก์เปิดได้จากหน้าต่าง private/incognito และ commit ที่มีลิงก์วิดีโอถูก push
+ขึ้น `main` แล้ว
